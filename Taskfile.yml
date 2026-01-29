@@ -1,0 +1,56 @@
+version: '3'
+
+env:
+  CGO_ENABLED: "0"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  test:
+    desc: Run unit tests
+    env:
+      CGO_ENABLED: "1"
+    cmds:
+      - go test -race -v ./...
+
+  lint:
+    desc: Lint the code with golangci-lint
+    cmds:
+      - golangci-lint run
+    sources:
+      - ./**/*.go
+
+  vuln:
+    cmds:
+      - govulncheck ./...
+    sources:
+      - ./**/*.go
+
+  fmt:
+    desc: Format the code
+    cmds:
+      - go fmt ./...
+
+  tidy:
+    desc: Clean up go.mod and go.sum
+    cmds:
+      - go mod tidy
+
+  update-deps:
+    desc: Update dependencies
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  install-tools:
+    desc: Install required dev tools
+    cmds:
+      - go install -trimpath -ldflags="-s -w" github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - go install -trimpath -ldflags="-s -w" golang.org/x/vuln/cmd/govulncheck@latest
+
+  all:
+    desc: Run all checks (fmt, tidy, lint, test)
+    deps: [fmt, tidy, lint, test]
