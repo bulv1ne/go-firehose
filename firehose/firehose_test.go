@@ -3,11 +3,12 @@ package firehose
 import (
 	"bytes"
 	"compress/gzip"
-	"go-firehose/internal"
 	"io"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/bulv1ne/go-firehose/internal"
 
 	"github.com/stretchr/testify/assert"
 )

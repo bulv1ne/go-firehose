@@ -2,10 +2,11 @@ package internal
 
 import (
 	"fmt"
-	"go-firehose/sink"
 	"io"
 	"sync"
 	"sync/atomic"
+
+	"github.com/bulv1ne/go-firehose/sink"
 )
 
 var nameCounter int32 = 0
