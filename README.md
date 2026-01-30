@@ -14,7 +14,7 @@ This repo’s module name is `go-firehose` (see `go.mod`), so within this worksp
 - `go-firehose/firehose`
 - `go-firehose/sink`
 
-If you publish it under a different module path later (e.g. `github.com/<you>/go-firehose`), update `module` in `go.mod` and these imports will follow.
+If you publish it under a different module path later (e.g. `github.com/bulv1ne/go-firehose`), update `module` in `go.mod` and these imports will follow.
 
 ## Core API
 

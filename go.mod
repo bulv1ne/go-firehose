@@ -1,4 +1,4 @@
-module go-firehose
+module github.com/bulv1ne/go-firehose
 
 go 1.25
 
