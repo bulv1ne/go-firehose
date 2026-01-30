@@ -2,10 +2,10 @@ package firehose
 
 import "time"
 
-type WriterOpts func(*Writer)
+type WriterOpts func(*RecordWriter)
 
-func NewFirehoseWriter(supplier Supplier, opts ...WriterOpts) *Writer {
-	fw := &Writer{
+func NewRecordWriter(supplier Supplier, opts ...WriterOpts) *RecordWriter {
+	fw := &RecordWriter{
 		duration:      time.Minute,
 		maxBytes:      1024 * 1024,
 		supplier:      supplier,
@@ -18,19 +18,19 @@ func NewFirehoseWriter(supplier Supplier, opts ...WriterOpts) *Writer {
 }
 
 func WithDuration(d time.Duration) WriterOpts {
-	return func(fw *Writer) {
+	return func(fw *RecordWriter) {
 		fw.duration = d
 	}
 }
 
 func WithMaxBytes(n int) WriterOpts {
-	return func(fw *Writer) {
+	return func(fw *RecordWriter) {
 		fw.maxBytes = n
 	}
 }
 
 func WithAppendNewLine(appendNewLine bool) WriterOpts {
-	return func(fw *Writer) {
+	return func(fw *RecordWriter) {
 		fw.appendNewLine = appendNewLine
 	}
 }

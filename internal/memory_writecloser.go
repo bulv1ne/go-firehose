@@ -1,4 +1,4 @@
-package firehose
+package internal
 
 import (
 	"fmt"
@@ -12,11 +12,22 @@ var nameCounter int32 = 0
 var mwcHashMap = make(map[string][]byte)
 var mwcHashMapLock sync.Mutex
 
-func resetHashMap() {
+func ResetHashMap() {
 	atomic.StoreInt32(&nameCounter, 0)
 	mwcHashMapLock.Lock()
 	mwcHashMap = make(map[string][]byte)
 	mwcHashMapLock.Unlock()
+}
+
+func GetHashMap() map[string][]byte {
+	mwcHashMapLock.Lock()
+	defer mwcHashMapLock.Unlock()
+	// Return a copy to avoid
+	copyMap := make(map[string][]byte)
+	for k, v := range mwcHashMap {
+		copyMap[k] = v
+	}
+	return copyMap
 }
 
 type MemoryWriteCloser struct {

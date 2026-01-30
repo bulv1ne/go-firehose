@@ -6,9 +6,25 @@ import (
 	"time"
 )
 
+// Supplier creates a new destination writer (e.g., a file, an upload stream, etc.).
+//
+// RecordWriter calls Supplier when it needs to start a new "batch" (first write, or
+// after a flush/rotation). The returned io.WriteCloser will be closed when a flush
+// threshold is reached or when RecordWriter.Close is called.
 type Supplier func() (io.WriteCloser, error)
 
-type Writer struct {
+// RecordWriter is a batched writer that "rotates" the underlying io.WriteCloser
+// when a threshold is reached.
+//
+// A flush (rotation) occurs when either:
+//   - maxBytes is reached/exceeded (based on bytes successfully written), or
+//   - duration has elapsed since the current writer was initialized.
+//
+// If appendNewLine is true, PutRecord appends '\n' to each record before writing.
+//
+// Concurrency: all methods are safe for concurrent use; writes and flushes are
+// serialized with an internal mutex.
+type RecordWriter struct {
 	duration       time.Duration
 	maxBytes       int
 	supplier       Supplier
@@ -19,7 +35,12 @@ type Writer struct {
 	writtenBytes   int
 }
 
-func (fw *Writer) PutRecord(r []byte) error {
+// PutRecord writes a single record to the current underlying writer.
+//
+// PutRecord may flush/rotate the underlying writer before and/or after writing
+// if a threshold is reached. If appendNewLine is enabled, '\n' is appended to r
+// before writing.
+func (fw *RecordWriter) PutRecord(r []byte) error {
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 	// Check for time based threshold before writing
@@ -47,19 +68,27 @@ func (fw *Writer) PutRecord(r []byte) error {
 	return nil
 }
 
-func (fw *Writer) Close() error {
+// Close flushes (closes) the current underlying writer, if any.
+//
+// After Close, a subsequent PutRecord will lazily create a new writer via Supplier.
+func (fw *RecordWriter) Close() error {
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 	return fw.flush()
 }
 
-func (fw *Writer) FlushIfThresholdReached() error {
+// FlushIfThresholdReached checks thresholds and flushes (closes) the current
+// underlying writer if needed.
+//
+// This is useful to force time-based rotation in periods without writes (i.e.,
+// when PutRecord is not being called).
+func (fw *RecordWriter) FlushIfThresholdReached() error {
 	fw.lock.Lock()
 	defer fw.lock.Unlock()
 	return fw.flushIfThresholdReached()
 }
 
-func (fw *Writer) init() error {
+func (fw *RecordWriter) init() error {
 	if fw.lastWriter == nil {
 		writer, err := fw.supplier()
 		if err != nil {
@@ -72,14 +101,14 @@ func (fw *Writer) init() error {
 	return nil
 }
 
-func (fw *Writer) flushIfThresholdReached() error {
+func (fw *RecordWriter) flushIfThresholdReached() error {
 	if fw.lastWriter != nil && (fw.maxBytes <= fw.writtenBytes || time.Now().After(fw.estimatedDelay)) {
 		return fw.flush()
 	}
 	return nil
 }
 
-func (fw *Writer) flush() error {
+func (fw *RecordWriter) flush() error {
 	if fw.lastWriter != nil {
 		err := fw.lastWriter.Close()
 		fw.lastWriter = nil

@@ -1,4 +1,4 @@
-package firehose
+package internal
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestMemoryWriteCloser(t *testing.T) {
-	resetHashMap()
+	ResetHashMap()
 
 	mwc := NewMemoryWriteCloser()
 	data := []byte("Hello, Firehose!")

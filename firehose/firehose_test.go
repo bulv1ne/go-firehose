@@ -3,6 +3,7 @@ package firehose
 import (
 	"bytes"
 	"compress/gzip"
+	"go-firehose/internal"
 	"io"
 	"sort"
 	"testing"
@@ -12,12 +13,12 @@ import (
 )
 
 func MemoryWriteCloserSupplier() (io.WriteCloser, error) {
-	return NewMemoryWriteCloser(), nil
+	return internal.NewMemoryWriteCloser(), nil
 }
 
 func GzipMemoryWriteCloserSupplier() (io.WriteCloser, error) {
 	stack := NewWriteCloserStack()
-	writer := stack.Push(NewMemoryWriteCloser())
+	writer := stack.Push(internal.NewMemoryWriteCloser())
 	stack.Push(gzip.NewWriter(writer))
 	return stack, nil
 }
@@ -31,10 +32,10 @@ func MapKeys(m map[string][]byte) []string {
 	return keys
 }
 
-func TestFirehoseWriter_Delay(t *testing.T) {
-	resetHashMap()
+func TestRecordWriter_Delay(t *testing.T) {
+	internal.ResetHashMap()
 
-	fw := NewFirehoseWriter(MemoryWriteCloserSupplier, WithDuration(20*time.Millisecond))
+	fw := NewRecordWriter(MemoryWriteCloserSupplier, WithDuration(20*time.Millisecond))
 
 	assert.NoError(t, fw.PutRecord([]byte("Niels")))
 	assert.NoError(t, fw.PutRecord([]byte("Tisse")))
@@ -47,15 +48,16 @@ func TestFirehoseWriter_Delay(t *testing.T) {
 
 	assert.NoError(t, fw.Close())
 
-	assert.Equal(t, MapKeys(mwcHashMap), []string{"1", "2"})
-	assert.Equal(t, mwcHashMap["1"], []byte("NielsTisse"))
-	assert.Equal(t, mwcHashMap["2"], []byte("JunaAlise"))
+	hashMap := internal.GetHashMap()
+	assert.Equal(t, MapKeys(hashMap), []string{"1", "2"})
+	assert.Equal(t, hashMap["1"], []byte("NielsTisse"))
+	assert.Equal(t, hashMap["2"], []byte("JunaAlise"))
 }
 
-func TestFirehoseWriter_MaxBytes(t *testing.T) {
-	resetHashMap()
+func TestRecordWriter_MaxBytes(t *testing.T) {
+	internal.ResetHashMap()
 
-	fw := NewFirehoseWriter(MemoryWriteCloserSupplier, WithMaxBytes(7))
+	fw := NewRecordWriter(MemoryWriteCloserSupplier, WithMaxBytes(7))
 
 	assert.NoError(t, fw.PutRecord([]byte("Niels")))
 	assert.NoError(t, fw.PutRecord([]byte("Tisse")))
@@ -64,15 +66,16 @@ func TestFirehoseWriter_MaxBytes(t *testing.T) {
 
 	assert.NoError(t, fw.Close())
 
-	assert.Equal(t, MapKeys(mwcHashMap), []string{"1", "2"})
-	assert.Equal(t, mwcHashMap["1"], []byte("NielsTisse"))
-	assert.Equal(t, mwcHashMap["2"], []byte("JunaAlise"))
+	hashMap := internal.GetHashMap()
+	assert.Equal(t, MapKeys(hashMap), []string{"1", "2"})
+	assert.Equal(t, hashMap["1"], []byte("NielsTisse"))
+	assert.Equal(t, hashMap["2"], []byte("JunaAlise"))
 }
 
-func TestFirehoseWriter_AppendNewLine(t *testing.T) {
-	resetHashMap()
+func TestRecordWriter_AppendNewLine(t *testing.T) {
+	internal.ResetHashMap()
 
-	fw := NewFirehoseWriter(MemoryWriteCloserSupplier, WithAppendNewLine(true))
+	fw := NewRecordWriter(MemoryWriteCloserSupplier, WithAppendNewLine(true))
 
 	assert.NoError(t, fw.PutRecord([]byte("Niels")))
 	assert.NoError(t, fw.PutRecord([]byte("Tisse")))
@@ -81,14 +84,15 @@ func TestFirehoseWriter_AppendNewLine(t *testing.T) {
 
 	assert.NoError(t, fw.Close())
 
-	assert.Equal(t, MapKeys(mwcHashMap), []string{"1"})
-	assert.Equal(t, mwcHashMap["1"], []byte("Niels\nTisse\nJuna\nAlise\n"))
+	hashMap := internal.GetHashMap()
+	assert.Equal(t, MapKeys(hashMap), []string{"1"})
+	assert.Equal(t, hashMap["1"], []byte("Niels\nTisse\nJuna\nAlise\n"))
 }
 
-func TestFirehoseWriter_Gzip(t *testing.T) {
-	resetHashMap()
+func TestRecordWriter_Gzip(t *testing.T) {
+	internal.ResetHashMap()
 
-	fw := NewFirehoseWriter(GzipMemoryWriteCloserSupplier)
+	fw := NewRecordWriter(GzipMemoryWriteCloserSupplier)
 
 	assert.NoError(t, fw.PutRecord([]byte("Niels")))
 	assert.NoError(t, fw.PutRecord([]byte("Tisse")))
@@ -97,8 +101,9 @@ func TestFirehoseWriter_Gzip(t *testing.T) {
 
 	assert.NoError(t, fw.Close())
 
-	assert.Equal(t, MapKeys(mwcHashMap), []string{"1"})
-	gzippedData := mwcHashMap["1"]
+	hashMap := internal.GetHashMap()
+	assert.Equal(t, MapKeys(hashMap), []string{"1"})
+	gzippedData := hashMap["1"]
 	reader, err := gzip.NewReader(bytes.NewReader(gzippedData))
 	assert.NoError(t, err)
 	data, err := io.ReadAll(reader)
