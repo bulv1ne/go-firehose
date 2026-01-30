@@ -10,6 +10,7 @@ func NewRecordWriter(supplier Supplier, opts ...WriterOpts) *RecordWriter {
 		maxBytes:      1024 * 1024,
 		supplier:      supplier,
 		appendNewLine: false,
+		clock:         RealClock{},
 	}
 	for _, opt := range opts {
 		opt(fw)
@@ -32,5 +33,14 @@ func WithMaxBytes(n int) WriterOpts {
 func WithAppendNewLine(appendNewLine bool) WriterOpts {
 	return func(fw *RecordWriter) {
 		fw.appendNewLine = appendNewLine
+	}
+}
+
+// WithClock sets a custom clock for time-based threshold checks.
+//
+// Useful for testing.
+func WithClock(clock Clock) WriterOpts {
+	return func(fw *RecordWriter) {
+		fw.clock = clock
 	}
 }

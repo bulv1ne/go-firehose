@@ -33,6 +33,7 @@ type RecordWriter struct {
 	lastWriter     io.WriteCloser
 	estimatedDelay time.Time
 	writtenBytes   int
+	clock          Clock
 }
 
 // PutRecord writes a single record to the current underlying writer.
@@ -96,13 +97,13 @@ func (fw *RecordWriter) init() error {
 		}
 		fw.lastWriter = writer
 		fw.writtenBytes = 0
-		fw.estimatedDelay = time.Now().Add(fw.duration)
+		fw.estimatedDelay = fw.clock.Now().Add(fw.duration)
 	}
 	return nil
 }
 
 func (fw *RecordWriter) flushIfThresholdReached() error {
-	if fw.lastWriter != nil && (fw.maxBytes <= fw.writtenBytes || time.Now().After(fw.estimatedDelay)) {
+	if fw.lastWriter != nil && (fw.maxBytes <= fw.writtenBytes || fw.clock.Now().After(fw.estimatedDelay)) {
 		return fw.flush()
 	}
 	return nil

@@ -36,12 +36,13 @@ func MapKeys(m map[string][]byte) []string {
 func TestRecordWriter_Delay(t *testing.T) {
 	internal.ResetHashMap()
 
-	fw := NewRecordWriter(MemoryWriteCloserSupplier, WithDuration(20*time.Millisecond))
+	clock := &MockClock{CurrentTime: time.Now()}
+	fw := NewRecordWriter(MemoryWriteCloserSupplier, WithDuration(1*time.Minute), WithClock(clock))
 
 	assert.NoError(t, fw.PutRecord([]byte("Niels")))
 	assert.NoError(t, fw.PutRecord([]byte("Tisse")))
 
-	time.Sleep(30 * time.Millisecond)
+	clock.Advance(2 * time.Minute)
 	assert.NoError(t, fw.FlushIfThresholdReached())
 
 	assert.NoError(t, fw.PutRecord([]byte("Juna")))
